@@ -378,6 +378,14 @@
         const SPREADSHEET_ID = '16q8crGvmzm33DNozIzUhTFaSf4K3gbs-gx-afwCNRqA';
         const SHEET_NAME = '고객관리';
 
+        // 디버깅용 콘솔 로그
+        console.log('=== 구글 API 설정 확인 ===');
+        console.log('API_KEY:', API_KEY);
+        console.log('CLIENT_ID:', CLIENT_ID);
+        console.log('SPREADSHEET_ID:', SPREADSHEET_ID);
+        console.log('현재 URL:', window.location.href);
+        console.log('========================');
+
         let gapi;
         let tokenClient;
         let isAuthorized = false;
@@ -386,36 +394,83 @@
 
         // 페이지 로드 시 초기화
         window.onload = function() {
+            console.log('페이지 로드 완료');
             loadGoogleAPI();
         };
 
         // 구글 API 로드
         function loadGoogleAPI() {
+            console.log('구글 API 로딩 시작...');
             const script = document.createElement('script');
             script.src = 'https://apis.google.com/js/api.js';
-            script.onload = initializeGapi;
+            script.onload = function() {
+                console.log('GAPI 스크립트 로드 완료');
+                initializeGapi();
+            };
+            script.onerror = function() {
+                console.error('GAPI 스크립트 로드 실패');
+                showMessage('구글 API 로드에 실패했습니다.', 'error');
+            };
             document.head.appendChild(script);
         }
 
         // GAPI 초기화
         async function initializeGapi() {
-            await gapi.load('client', initializeGapiClient);
+            console.log('GAPI 초기화 시작...');
+            try {
+                await gapi.load('client', initializeGapiClient);
+                console.log('GAPI 클라이언트 로드 완료');
+            } catch (error) {
+                console.error('GAPI 초기화 실패:', error);
+                showMessage('구글 API 초기화에 실패했습니다.', 'error');
+            }
         }
 
         async function initializeGapiClient() {
-            await gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: [DISCOVERY_DOC],
-            });
+            console.log('GAPI 클라이언트 초기화 시작...');
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                console.log('GAPI 클라이언트 초기화 완료');
 
-            // Google Identity Services 초기화
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: handleAuthCallback,
-            });
+                // Google Identity Services 로드 대기
+                if (typeof google !== 'undefined' && google.accounts) {
+                    initializeGIS();
+                } else {
+                    console.log('GIS 대기 중...');
+                    setTimeout(() => {
+                        if (typeof google !== 'undefined' && google.accounts) {
+                            initializeGIS();
+                        } else {
+                            console.error('Google Identity Services 로드 실패');
+                            showMessage('구글 인증 서비스 로드에 실패했습니다.', 'error');
+                        }
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('GAPI 클라이언트 초기화 실패:', error);
+                showMessage('구글 API 클라이언트 초기화에 실패했습니다.', 'error');
+            }
+        }
 
-            setupEventListeners();
+        function initializeGIS() {
+            console.log('Google Identity Services 초기화 시작...');
+            try {
+                // Google Identity Services 초기화
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: handleAuthCallback,
+                });
+                console.log('GIS 초기화 완료');
+                setupEventListeners();
+                showMessage('구글 API 연결 준비 완료!', 'success');
+            } catch (error) {
+                console.error('GIS 초기화 실패:', error);
+                showMessage('구글 인증 초기화에 실패했습니다.', 'error');
+            }
         }
 
         // 인증 콜백 처리
@@ -436,34 +491,77 @@
 
         // 이벤트 리스너 설정
         function setupEventListeners() {
-            document.getElementById('authorizeBtn').addEventListener('click', () => {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            });
+            console.log('이벤트 리스너 설정 중...');
+            
+            const authorizeBtn = document.getElementById('authorizeBtn');
+            const signoutBtn = document.getElementById('signoutBtn');
+            
+            if (authorizeBtn) {
+                authorizeBtn.addEventListener('click', () => {
+                    console.log('구글 로그인 버튼 클릭됨');
+                    if (tokenClient) {
+                        console.log('토큰 클라이언트로 인증 요청...');
+                        tokenClient.requestAccessToken({prompt: 'consent'});
+                    } else {
+                        console.error('토큰 클라이언트가 초기화되지 않음');
+                        showMessage('구글 인증이 준비되지 않았습니다. 페이지를 새로고침해보세요.', 'error');
+                    }
+                });
+                console.log('로그인 버튼 이벤트 리스너 등록 완료');
+            } else {
+                console.error('로그인 버튼을 찾을 수 없음');
+            }
 
-            document.getElementById('signoutBtn').addEventListener('click', () => {
-                const token = gapi.client.getToken();
-                if (token !== null) {
-                    google.accounts.oauth2.revoke(token.access_token);
-                    gapi.client.setToken('');
-                }
-                
-                isAuthorized = false;
-                document.getElementById('authorizeBtn').style.display = 'block';
-                document.getElementById('signoutBtn').style.display = 'none';
-                document.getElementById('authSection').style.display = 'block';
-                document.getElementById('mainContent').style.display = 'none';
-            });
+            if (signoutBtn) {
+                signoutBtn.addEventListener('click', () => {
+                    const token = gapi.client.getToken();
+                    if (token !== null) {
+                        google.accounts.oauth2.revoke(token.access_token);
+                        gapi.client.setToken('');
+                    }
+                    
+                    isAuthorized = false;
+                    document.getElementById('authorizeBtn').style.display = 'block';
+                    document.getElementById('signoutBtn').style.display = 'none';
+                    document.getElementById('authSection').style.display = 'block';
+                    document.getElementById('mainContent').style.display = 'none';
+                });
+            }
 
-            document.getElementById('customerForm').addEventListener('submit', handleFormSubmit);
-            document.getElementById('searchBtn').addEventListener('click', searchCustomers);
-            document.getElementById('refreshBtn').addEventListener('click', loadCustomers);
-            document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
+            // 나머지 이벤트 리스너들
+            const customerForm = document.getElementById('customerForm');
+            if (customerForm) {
+                customerForm.addEventListener('submit', handleFormSubmit);
+            }
+            
+            const searchBtn = document.getElementById('searchBtn');
+            if (searchBtn) {
+                searchBtn.addEventListener('click', searchCustomers);
+            }
+            
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', loadCustomers);
+            }
+            
+            const cancelBtn = document.getElementById('cancelBtn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', cancelEdit);
+            }
             
             // 검색 입력 시 실시간 검색
-            document.getElementById('searchInput').addEventListener('input', searchCustomers);
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', searchCustomers);
+            }
             
             // 오늘 날짜를 기본값으로 설정
-            document.getElementById('serviceDate').value = new Date().toISOString().split('T')[0];
+            const serviceDate = document.getElementById('serviceDate');
+            if (serviceDate) {
+                serviceDate.value = new Date().toISOString().split('T')[0];
+            }
+            
+            console.log('모든 이벤트 리스너 설정 완료');
         }
 
         // 고객 데이터 로드
