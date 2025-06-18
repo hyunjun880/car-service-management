@@ -1,1 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자동차정비소 고객관리</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .auth-section {
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .main-content {
+            padding: 30px;
+            display: none;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .customers-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .customers-table {
+            overflow-x: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.in-progress {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        .btn-edit {
+            background: #007bff;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+            }
+            
+            .customers-table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 자동차정비소 고객관리</h1>
+            <p>구글 시트 연동 고객관리 시스템</p>
+        </div>
+
+        <!-- 인증 섹션 -->
+        <div class="auth-section" id="authSection">
+            <h2>구글 시트 연동</h2>
+            <p>구글 계정으로 로그인하여 시트에 접근하세요.</p>
+            <button class="btn" id="authorizeBtn">구글 로그인</button>
+            <button class="btn" id="signoutBtn" style="display: none;">로그아웃</button>
+            <div id="authStatus"></div>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content" id="mainContent">
+            <!-- 고객 등록 폼 -->
+            <div class="form-section">
+                <h2>고객 정보 등록</h2>
+                <form id="customerForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="customerName">고객명 *</label>
+                            <input type="text" id="customerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">연락처 *</label>
+                            <input type="tel" id="phoneNumber" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="carBrand">차량 브랜드</label>
+                            <input type="text" id="carBrand">
+                        </div>
+                        <div class="form-group">
+                            <label for="carModel">차량 모델</label>
+                            <input type="text" id="carModel">
+                        </div>
+                        <div class="form-group">
+                            <label for="carYear">연식</label>
+                            <input type="number" id="carYear" min="1990" max="2030">
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceType">서비스 유형</label>
+                            <select id="serviceType">
+                                <option value="">선택하세요</option>
+                                <option value="정기점검">정기점검</option>
+                                <option value="엔진오일교환">엔진오일교환</option>
+                                <option value="타이어교체">타이어교체</option>
+                                <option value="브레이크점검">브레이크점검</option>
+                                <option value="에어컨점검">에어컨점검</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceDate">서비스 날짜</label>
+                            <input type="date" id="serviceDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceStatus">상태</label>
+                            <select id="serviceStatus">
+                                <option value="pending">대기중</option>
+                                <option value="in-progress">진행중</option>
+                                <option value="completed">완료</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">특이사항</label>
+                        <textarea id="notes" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn" id="submitBtn">고객 등록</button>
+                    <button type="button" class="btn" id="cancelBtn" style="display: none;">취소</button>
+                </form>
+            </div>
+
+            <!-- 고객 목록 -->
+            <div class="customers-section">
+                <h2>고객 목록</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="고객명, 연락처, 차량 정보로 검색...">
+                    <button class="btn" id="searchBtn">검색</button>
+                    <button class="btn" id="refreshBtn">새로고침</button>
+                </div>
+                
+                <div id="customersTable" class="customers-table">
+                    <div class="loading">데이터를 불러오는 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수정 모달 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>고객 정보 수정</h3>
+            <form id="editForm">
+                <!-- 동일한 폼 필드들 -->
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 구글 API 설정
+        const API_KEY = 'AIzaSyBfFEWajcRGAP36jZAzxHTMc77fWjkQXBU'; // 실제 API 키로 교체 필요
+        const CLIENT_ID = '296829142817-ousdanj8dor9qnhcc5a67tv3mrh02gur.apps.googleusercontent.com'; // 실제 클라이언트 ID로 교체 필요
+        const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+        
+        // 구글 시트 ID (실제 시트 ID로 교체 필요)
+        const SPREADSHEET_ID = '16q8crGvmzm33DNozIzUhTFaSf4K3gbs-gx-afwCNRqA';
+        const SHEET_NAME = '고객관리';
+
+        let gapi;
+        let tokenClient;
+        let isAuthorized = false;
+        let customers = [];
+        let editingRowIndex = -1;
+
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            loadGoogleAPI();
+        };
+
+        // 구글 API 로드
+        function loadGoogleAPI() {
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.onload = initializeGapi;
+            document.head.appendChild(script);
+        }
+
+        // GAPI 초기화
+        async function initializeGapi() {
+            await gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: [DISCOVERY_DOC],
+            });
+
+            // Google Identity Services 초기화
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: handleAuthCallback,
+            });
+
+            setupEventListeners();
+        }
+
+        // 인증 콜백 처리
+        function handleAuthCallback(resp) {
+            if (resp.error !== undefined) {
+                throw (resp);
+            }
+            
+            isAuthorized = true;
+            document.getElementById('authorizeBtn').style.display = 'none';
+            document.getElementById('signoutBtn').style.display = 'block';
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            showMessage('구글 시트에 연결되었습니다!', 'success');
+            loadCustomers();
+        }
+
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            document.getElementById('authorizeBtn').addEventListener('click', () => {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            });
+
+            document.getElementById('signoutBtn').addEventListener('click', () => {
+                const token = gapi.client.getToken();
+                if (token !== null) {
+                    google.accounts.oauth2.revoke(token.access_token);
+                    gapi.client.setToken('');
+                }
+                
+                isAuthorized = false;
+                document.getElementById('authorizeBtn').style.display = 'block';
+                document.getElementById('signoutBtn').style.display = 'none';
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('mainContent').style.display = 'none';
+            });
+
+            document.getElementById('customerForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('searchBtn').addEventListener('click', searchCustomers);
+            document.getElementById('refreshBtn').addEventListener('click', loadCustomers);
+            document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
+            
+            // 검색 입력 시 실시간 검색
+            document.getElementById('searchInput').addEventListener('input', searchCustomers);
+            
+            // 오늘 날짜를 기본값으로 설정
+            document.getElementById('serviceDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        // 고객 데이터 로드
+        async function loadCustomers() {
+            if (!isAuthorized) return;
+            
+            try {
+                showLoading();
+                
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${SHEET_NAME}!A:I`,
+                });
+
+                const rows = response.result.values;
+                if (rows && rows.length > 1) {
+                    // 헤더 제외하고 데이터 파싱
+                    customers = rows.slice(1).map((row, index) => ({
+                        rowIndex: index + 2, // 시트에서의 행 번호 (헤더 포함)
+                        name: row[0] || '',
+                        phone: row[1] || '',
+                        carBrand: row[2] || '',
+                        carModel: row[3] || '',
+                        carYear: row[4] || '',
+                        serviceType: row[5] || '',
+                        serviceDate: row[6] || '',
+                        status: row[7] || 'pending',
+                        notes: row[8] || ''
+                    }));
+                } else {
+                    customers = [];
+                    await createHeaderRow();
+                }
+                
+                displayCustomers(customers);
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                showMessage('데이터를 불러오는데 실패했습니다.', 'error');
+            }
+        }
+
+        // 헤더 행 생성
+        async function createHeaderRow() {
+            const headers = [
+                '고객명', '연락처', '차량브랜드', '차량모델', '연식', 
+                '서비스유형', '서비스날짜', '상태', '특이사항'
+            ];
+            
+            try {
+                await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${SHEET_NAME}!A1:I1`,
+                    valueInputOption: 'RAW',
+                    resource: {
+                        values: [headers]
+                    }
+                });
+            } catch (error) {
+                console.error('헤더 생성 실패:', error);
+            }
+        }
+
+        // 고객 목록 표시
+        function displayCustomers(customersToShow) {
+            const tableContainer = document.getElementById('customersTable');
+            
+            if (customersToShow.length === 0) {
+                tableContainer.innerHTML = '<div class="loading">등록된 고객이 없습니다.</div>';
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>고객명</th>
+                            <th>연락처</th>
+                            <th>차량정보</th>
+                            <th>서비스유형</th>
+                            <th>서비스날짜</th>
+                            <th>상태</th>
+                            <th>특이사항</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            customersToShow.forEach((customer, index) => {
+                const carInfo = [customer.carBrand, customer.carModel, customer.carYear].filter(Boolean).join(' ');
+                tableHTML += `
+                    <tr>
+                        <td>${customer.name}</td>
+                        <td>${customer.phone}</td>
+                        <td>${carInfo}</td>
+                        <td>${customer.serviceType}</td>
+                        <td>${customer.serviceDate}</td>
+                        <td><span class="status ${customer.status}">${getStatusText(customer.status)}</span></td>
+                        <td>${customer.notes}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-small btn-edit" onclick="editCustomer(${index})">수정</button>
+                            <button class="btn btn-small btn-delete" onclick="deleteCustomer(${index})">삭제</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+            tableContainer.innerHTML = tableHTML;
+        }
+
+        // 상태 텍스트 변환
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '대기중',
+                'in-progress': '진행중',
+                'completed': '완료'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 폼 제출 처리
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('customerName').value,
+                phone: document.getElementById('phoneNumber').value,
+                carBrand: document.getElementById('carBrand').value,
+                carModel: document.getElementById('carModel').value,
+                carYear: document.getElementById('carYear').value,
+                serviceType: document.getElementById('serviceType').value,
+                serviceDate: document.getElementById('serviceDate').value,
+                status: document.getElementById('serviceStatus').value,
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                if (editingRowIndex === -1) {
+                    await addCustomer(formData);
+                    showMessage('고객이 성공적으로 등록되었습니다!', 'success');
+                } else {
+                    await updateCustomer(editingRowIndex, formData);
+                    showMessage('고객 정보가 성공적으로 수정되었습니다!', 'success');
+                    cancelEdit();
+                }
+                
+                document.getElementById('customerForm').reset();
+                document.getElementById('serviceDate').value = new Date().toISOString().split('T')[0];
+                loadCustomers();
+            } catch (error) {
+                console.error('저장 실패:', error);
+                showMessage('저장에 실패했습니다.', 'error');
+            }
+        }
+
+        // 고객 추가
+        async function addCustomer(customerData) {
+            const values = [
+                customerData.name,
+                customerData.phone,
+                customerData.carBrand,
+                customerData.carModel,
+                customerData.carYear,
+                customerData.serviceType,
+                customerData.serviceDate,
+                customerData.status,
+                customerData.notes
+            ];
+
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `${SHEET_NAME}!A:I`,
+                valueInputOption: 'RAW',
+                resource: {
+                    values: [values]
+                }
+            });
+        }
+
+        // 고객 정보 수정
+        async function updateCustomer(index, customerData) {
+            const customer = customers[index];
+            const values = [
+                customerData.name,
+                customerData.phone,
+                customerData.carBrand,
+                customerData.carModel,
+                customerData.carYear,
+                customerData.serviceType,
+                customerData.serviceDate,
+                customerData.status,
+                customerData.notes
+            ];
+
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `${SHEET_NAME}!A${customer.rowIndex}:I${customer.rowIndex}`,
+                valueInputOption: 'RAW',
+                resource: {
+                    values: [values]
+                }
+            });
+        }
+
+        // 고객 편집
+        function editCustomer(index) {
+            const customer = customers[index];
+            editingRowIndex = index;
+            
+            // 폼에 데이터 채우기
+            document.getElementById('customerName').value = customer.name;
+            document.getElementById('phoneNumber').value = customer.phone;
+            document.getElementById('carBrand').value = customer.carBrand;
+            document.getElementById('carModel').value = customer.carModel;
+            document.getElementById('carYear').value = customer.carYear;
+            document.getElementById('serviceType').value = customer.serviceType;
+            document.getElementById('serviceDate').value = customer.serviceDate;
+            document.getElementById('serviceStatus').value = customer.status;
+            document.getElementById('notes').value = customer.notes;
+            
+            // 버튼 텍스트 변경
+            document.getElementById('submitBtn').textContent = '수정 완료';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            
+            // 폼으로 스크롤
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 편집 취소
+        function cancelEdit() {
+            editingRowIndex = -1;
+            document.getElementById('customerForm').reset();
+            document.getElementById('serviceDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('submitBtn').textContent = '고객 등록';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // 고객 삭제
+        async function deleteCustomer(index) {
+            if (!confirm('정말로 이 고객 정보를 삭제하시겠습니까?')) return;
+            
+            try {
+                const customer = customers[index];
+                
+                // 행 삭제 요청
+                await gapi.client.sheets.spreadsheets.batchUpdate({
+                    spreadsheetId: SPREADSHEET_ID,
+                    resource: {
+                        requests: [{
+                            deleteDimension: {
+                                range: {
+                                    sheetId: 0, // 첫 번째 시트
+                                    dimension: 'ROWS',
+                                    startIndex: customer.rowIndex - 1,
+                                    endIndex: customer.rowIndex
+                                }
+                            }
+                        }]
+                    }
+                });
+                
+                showMessage('고객 정보가 삭제되었습니다.', 'success');
+                loadCustomers();
+            } catch (error) {
+                console.error('삭제 실패:', error);
+                showMessage('삭제에 실패했습니다.', 'error');
+            }
+        }
+
+        // 고객 검색
+        function searchCustomers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                displayCustomers(customers);
+                return;
+            }
+            
+            const filteredCustomers = customers.filter(customer => 
+                customer.name.toLowerCase().includes(searchTerm) ||
+                customer.phone.includes(searchTerm) ||
+                customer.carBrand.toLowerCase().includes(searchTerm) ||
+                customer.carModel.toLowerCase().includes(searchTerm) ||
+                customer.serviceType.toLowerCase().includes(searchTerm)
+            );
+            
+            displayCustomers(filteredCustomers);
+        }
+
+        // 로딩 표시
+        function showLoading() {
+            document.getElementById('customersTable').innerHTML = '<div class="loading">데이터를 불러오는 중...</div>';
+        }
+
+        // 메시지 표시
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            const container = document.querySelector('.main-content');
+            container.insertBefore(messageDiv, container.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Google Identity Services 라이브러리 로드
+        const gisScript = document.createElement('script');
+        gisScript.src = 'https://accounts.google.com/gsi/client';
+        gisScript.async = true;
+        gisScript.defer = true;
+        document.head.appendChild(gisScript);
+    </script>
+</body>
+</html>
